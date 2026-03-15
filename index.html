@@ -275,7 +275,11 @@ function parseSheet(ws, filename) {
     if (!codeToUse || !/^[A-Za-z]+\d+/.test(codeToUse)) continue;
 
     if (/^[A-Za-z]+\d+/.test(rawCode)) lastCode = rawCode;
-    if (rawName) lastName = rawName;
+    if (rawName) {
+      // 只抓括號內的文字，支援全形（）和半形()
+      const match = rawName.match(/[（(]([^）)]+)[）)]/);
+      lastName = match ? match[1] : rawName;
+    }
 
     // 讀取各 ORDER 欄數量
     const qty = {};
@@ -398,8 +402,8 @@ function generateLabels() {
       <div class="lbl-code">${item.code}</div>
       <div class="lbl-name">${item.name}</div>
       <div class="lbl-tags">
-        <span class="lbl-tag">${item.color}</span>
-        <span class="lbl-tag">${item.size}</span>
+        ${item.color ? `<span class="lbl-tag">${item.color}</span>` : ''}
+        ${item.size  ? `<span class="lbl-tag">${item.size}</span>`  : ''}
       </div>`;
     return div;
   }
