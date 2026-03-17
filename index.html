@@ -99,15 +99,21 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
 .layout-40 .label { min-height: 27mm; }
 .layout-40 .label-empty { min-height: 27mm; }
 
-/* --- 40格-47（新版 47×26.9mm，切線從1.4mm開始）--- */
+/* --- 40格-47（47×26.9mm，上下14mm 左右7mm）--- */
+/* A4=210×297  可用寬=210-7-7=196mm  可用高=297-14-14=269mm
+   4欄×47mm=188mm → 欄間距=(196-188)/3 ≈ 2.67mm
+   10列×26.9mm=269mm → 列間距=0 */
 .layout-40-47 {
   grid-template-columns: repeat(4, 47mm);
   grid-template-rows: repeat(10, 26.9mm);
-  padding-top: 1.4mm;
-  padding-left: 1.4mm;
-  column-gap: 3.05mm;
-  row-gap: 2.8mm;
+  padding-top: 14mm;
+  padding-bottom: 14mm;
+  padding-left: 7mm;
+  padding-right: 7mm;
+  column-gap: 2.67mm;
+  row-gap: 0;
   justify-content: start;
+  align-content: start;
 }
 .layout-40-47 .label { height: 26.9mm; }
 .layout-40-47 .label-empty { height: 26.9mm; }
