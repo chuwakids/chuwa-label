@@ -71,38 +71,68 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
 /* ══ 列印 ══ */
 @media print {
   .wrap { display: none !important; }
-  @page { size: A4; margin: 6mm; }
-  body { background: white; }
+  @page { size: A4; margin: 0; }
+  body { background: white; margin: 0; padding: 0; }
   #printArea { display: block !important; }
+
+  /* ★ 列印時隱藏標籤邊框 */
+  .label { border: none !important; }
+  .label-empty { border: none !important; }
 }
 
-/* ══ 標籤（螢幕 + 列印共用）══ */
+/* ══ 標籤頁面共用 ══ */
 .label-page {
-  width: 198mm;
+  width: 210mm;
+  height: 297mm;
   display: grid;
-  gap: 1mm;
+  gap: 0;
   background: white;
   page-break-after: always;
   break-after: page;
 }
 
-/* 40格：4欄×10列（52.5×29.7mm）預設 */
-.layout-40 { grid-template-columns: repeat(4, 1fr); }
+/* --- 40格（舊版 52.5×29.7mm）--- */
+.layout-40 {
+  grid-template-columns: repeat(4, 1fr);
+  padding: 6mm;
+}
 .layout-40 .label { min-height: 27mm; }
 .layout-40 .label-empty { min-height: 27mm; }
 
-/* 21格：3欄×7列 */
-.layout-21 { grid-template-columns: repeat(3, 1fr); }
+/* --- 40格-47（新版 47×26.9mm，切線從1.4mm開始）--- */
+.layout-40-47 {
+  grid-template-columns: repeat(4, 47mm);
+  grid-template-rows: repeat(10, 26.9mm);
+  padding-top: 1.4mm;
+  padding-left: 1.4mm;
+  column-gap: 3.05mm;
+  row-gap: 2.8mm;
+  justify-content: start;
+}
+.layout-40-47 .label { height: 26.9mm; }
+.layout-40-47 .label-empty { height: 26.9mm; }
+
+/* --- 21格：3欄×7列 --- */
+.layout-21 {
+  grid-template-columns: repeat(3, 1fr);
+  padding: 6mm;
+}
 .layout-21 .label { min-height: 38mm; }
 .layout-21 .label-empty { min-height: 38mm; }
 
-/* 24格：3欄×8列 */
-.layout-24 { grid-template-columns: repeat(3, 1fr); }
+/* --- 24格：3欄×8列 --- */
+.layout-24 {
+  grid-template-columns: repeat(3, 1fr);
+  padding: 6mm;
+}
 .layout-24 .label { min-height: 33mm; }
 .layout-24 .label-empty { min-height: 33mm; }
 
-/* 65格：5欄×13列 */
-.layout-65 { grid-template-columns: repeat(5, 1fr); }
+/* --- 65格：5欄×13列 --- */
+.layout-65 {
+  grid-template-columns: repeat(5, 1fr);
+  padding: 6mm;
+}
 .layout-65 .label { min-height: 20mm; }
 .layout-65 .label-empty { min-height: 20mm; }
 
@@ -127,6 +157,11 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
 .layout-65 .lbl-code { font-size: 9pt; }
 .layout-65 .lbl-name { font-size: 5.5pt; }
 .layout-65 .lbl-tag  { font-size: 7pt; }
+
+/* 47×26.9 格字體微調 */
+.layout-40-47 .lbl-code { font-size: 12pt; }
+.layout-40-47 .lbl-name { font-size: 7pt; }
+.layout-40-47 .lbl-tag  { font-size: 9pt; }
 
 .label-empty { border: 0.3mm dashed #e0e0e0; border-radius: 1mm; background: white; }
 #printArea { display: none; }
@@ -164,7 +199,8 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
       <div class="layout-row">
         <label>標籤規格：</label>
         <select id="layoutSel">
-          <option value="40" selected>A4 × 40格（52.5×29.7mm）✅</option>
+          <option value="40-47" selected>A4 × 40格（47×26.9mm）✅</option>
+          <option value="40">A4 × 40格（52.5×29.7mm）</option>
           <option value="21">A4 × 21格</option>
           <option value="24">A4 × 24格</option>
           <option value="65">A4 × 65格（小型）</option>
@@ -237,7 +273,6 @@ function processFile(file) {
 function parseSheet(ws, filename) {
   const range = XLSX.utils.decode_range(ws['!ref']);
 
-  // 找 ORDER 欄位：第1行有群組名稱 + 第2行是 ORDER 或 日期/ORDER
   orderCols = [];
   for (let c = range.s.c; c <= range.e.c; c++) {
     const r1val = String(ws[XLSX.utils.encode_cell({ r: 0, c })]?.v || '').trim();
@@ -254,34 +289,28 @@ function parseSheet(ws, filename) {
     return;
   }
 
-  // 解析商品列（第3行起）
   allRows = [];
   let lastCode = '';
   let lastName = '';
 
   for (let r = 2; r <= range.e.r; r++) {
     const get = c => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
-    const rawCode = String(get(0)).trim();  // A: 分析關鍵字
-    const rawName = String(get(1)).trim();  // B: 產品名稱
-    const color   = String(get(5)).trim();  // F: 顏色(中文)
-    const size    = String(get(6)).trim();  // G: 規格
+    const rawCode = String(get(0)).trim();
+    const rawName = String(get(1)).trim();
+    const color   = String(get(5)).trim();
+    const size    = String(get(6)).trim();
 
-    // 跳過空白列
     if (!rawCode && !color && !size) continue;
-    // 跳過 TOTAL 彙總列
     if (rawCode.toUpperCase().includes('TOTAL')) continue;
-    // 分析關鍵字需符合商品編號格式（英文+數字，如VD301）
     const codeToUse = rawCode || lastCode;
     if (!codeToUse || !/^[A-Za-z]+\d+/.test(codeToUse)) continue;
 
     if (/^[A-Za-z]+\d+/.test(rawCode)) lastCode = rawCode;
     if (rawName) {
-      // 只抓括號內的文字，支援全形（）和半形()
       const match = rawName.match(/[（(]([^）)]+)[）)]/);
       lastName = match ? match[1] : rawName;
     }
 
-    // 讀取各 ORDER 欄數量
     const qty = {};
     orderCols.forEach(oc => {
       const v = ws[XLSX.utils.encode_cell({ r, c: oc.colIndex })]?.v;
@@ -315,7 +344,6 @@ function renderDateButtons() {
   const grid = document.getElementById('dateGrid');
   grid.innerHTML = '';
 
-  // 只顯示有數量的欄位
   const activeCols = orderCols.filter(oc =>
     allRows.some(row => (row.qty[oc.colIndex] || 0) > 0)
   );
@@ -376,6 +404,15 @@ function refreshPreviewTable() {
   document.getElementById('previewCard').style.display = 'block';
 }
 
+/* ══ 版面配置對照 ══ */
+const layoutConfig = {
+  '40':    { perPage: 40, cssClass: 'layout-40' },
+  '40-47': { perPage: 40, cssClass: 'layout-40-47' },
+  '21':    { perPage: 21, cssClass: 'layout-21' },
+  '24':    { perPage: 24, cssClass: 'layout-24' },
+  '65':    { perPage: 65, cssClass: 'layout-65' },
+};
+
 /* ══ 產生標籤 ══ */
 function generateLabels() {
   if (!selectedCols.length) { alert('請先選擇訂貨群組！'); return; }
@@ -390,8 +427,9 @@ function generateLabels() {
 
   if (labelList.length === 0) { alert('選取的群組沒有任何數量'); return; }
 
-  const layout   = parseInt(document.getElementById('layoutSel').value);
-  const perPage  = layout;
+  const layoutKey = document.getElementById('layoutSel').value;
+  const config    = layoutConfig[layoutKey];
+  const perPage   = config.perPage;
   const totalPages = Math.ceil(labelList.length / perPage);
 
   function makeLabelEl(item) {
@@ -410,7 +448,7 @@ function generateLabels() {
 
   function makePage(slice) {
     const page = document.createElement('div');
-    page.className = `label-page layout-${layout}`;
+    page.className = `label-page ${config.cssClass}`;
     slice.forEach(item => page.appendChild(makeLabelEl(item)));
     const rem = perPage - slice.length;
     for (let i = 0; i < rem; i++) {
