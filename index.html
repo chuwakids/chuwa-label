@@ -15,13 +15,13 @@
   --white: #fff;
   --border: #ddd;
   --muted: #888;
+  --ok: #27ae60;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--dark); }
 
-/* ══ 螢幕介面 ══ */
 @media screen {
-  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; }
 
   header { border-left: 5px solid var(--red); padding-left: 16px; margin-bottom: 32px; }
   header h1 { font-size: 22px; font-weight: 900; }
@@ -42,6 +42,11 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
   .date-btn:hover { border-color: var(--red); color: var(--red); }
   .date-btn.active { background: var(--red); border-color: var(--red); color: white; }
 
+  .mode-tabs { display: flex; gap: 0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; border: 2px solid var(--dark); }
+  .mode-tab { flex: 1; padding: 12px; text-align: center; font-size: 14px; font-weight: 700; cursor: pointer; transition: .15s; background: white; color: var(--dark); border: none; font-family: inherit; }
+  .mode-tab.active { background: var(--dark); color: white; }
+  .mode-tab:not(:last-child) { border-right: 2px solid var(--dark); }
+
   .settings-grid { display: flex; flex-direction: column; gap: 14px; }
   .layout-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .layout-row label { font-size: 13px; font-weight: 600; min-width: 70px; }
@@ -49,11 +54,13 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
 
   .summary-box { background: #f0faf4; border: 1.5px solid #a8ddb8; border-radius: 8px; padding: 14px 18px; font-size: 14px; color: #1a5c30; font-weight: 600; margin-bottom: 16px; }
 
-  .tbl-wrap { overflow-x: auto; }
+  .tbl-wrap { overflow-x: auto; max-height: 450px; overflow-y: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { background: var(--dark); color: white; padding: 8px 12px; text-align: left; font-size: 12px; }
+  th { background: var(--dark); color: white; padding: 8px 12px; text-align: left; font-size: 12px; position: sticky; top: 0; z-index: 1; }
   td { padding: 7px 12px; border-bottom: 1px solid #eee; }
   tr:nth-child(even) td { background: #fafafa; }
+  tr.row-selected td { background: #fff3f0 !important; }
+  tr.row-highlight td { background: #fffde7 !important; }
 
   .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
   .btn { padding: 13px 30px; border-radius: 8px; border: none; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: .15s; }
@@ -61,113 +68,111 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
   .btn-red:hover  { background: #a93226; }
   .btn-dark { background: var(--dark); color: white; }
   .btn-dark:hover { background: #141e26; }
+  .btn-outline { background: white; color: var(--red); border: 2px solid var(--red); }
+  .btn-outline:hover { background: #fff5f4; }
   .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-sm { padding: 8px 16px; font-size: 12px; }
+
+  .search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+  .search-input { flex: 1; padding: 12px 16px; border: 2px solid var(--border); border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 500; outline: none; transition: .2s; }
+  .search-input:focus { border-color: var(--red); }
+  .search-input::placeholder { color: #bbb; font-family: 'Noto Sans TC', sans-serif; font-size: 14px; }
+
+  .search-results { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; margin-bottom: 16px; }
+  .search-result-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #faf8f6; border: 1.5px solid #e8e0d8; border-radius: 8px; cursor: pointer; transition: .15s; }
+  .search-result-item:hover { border-color: var(--red); background: #fff5f4; }
+  .search-result-item.sr-added { border-color: var(--ok); background: #f0fff4; }
+  .sr-code { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 700; min-width: 100px; }
+  .sr-info { font-size: 12px; color: #666; flex: 1; }
+  .sr-qty  { font-size: 13px; font-weight: 700; color: var(--red); }
+  .sr-status { font-size: 18px; min-width: 24px; text-align: center; }
+
+  .queue-section { margin-top: 20px; border-top: 2px solid #eee; padding-top: 16px; }
+  .queue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .queue-header h4 { font-size: 14px; font-weight: 700; }
+  .queue-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+  .queue-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f8f8f8; border-radius: 6px; font-size: 13px; }
+  .queue-item .qi-code { font-family: 'DM Mono', monospace; font-weight: 700; min-width: 90px; }
+  .queue-item .qi-tags { display: flex; gap: 4px; flex: 1; }
+  .queue-item .qi-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border: 1.5px solid #555; border-radius: 4px; }
+  .queue-item .qi-count { font-size: 13px; font-weight: 700; color: var(--red); min-width: 40px; text-align: right; }
+  .queue-item .qi-remove { background: none; border: none; color: #ccc; cursor: pointer; font-size: 18px; padding: 0 4px; line-height: 1; }
+  .queue-item .qi-remove:hover { color: var(--red); }
+  .queue-total { margin-top: 10px; padding: 10px 14px; background: #f0faf4; border: 1.5px solid #a8ddb8; border-radius: 8px; font-size: 14px; font-weight: 700; color: #1a5c30; }
+
+  .cb-cell { width: 28px; text-align: center; }
+  .cb-cell input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--red); cursor: pointer; }
 
   .preview-wrap { background: #ddd; padding: 20px; border-radius: 10px; margin-top: 20px; overflow-x: auto; }
   .preview-wrap h3 { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #555; margin-bottom: 12px; }
   .preview-note { text-align: center; font-size: 12px; color: #666; margin-top: 10px; }
+  .label-printer-preview { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 }
 
 /* ══ 列印 ══ */
 @media print {
   .wrap { display: none !important; }
-  @page { size: A4; margin: 0; }
   body { background: white; margin: 0; padding: 0; }
   #printArea { display: block !important; }
-
-  /* ★ 列印時隱藏標籤邊框 */
   .label { border: none !important; }
   .label-empty { border: none !important; }
 }
 
-/* ══ 標籤頁面共用 ══ */
+/* ══ A4 標籤頁面 ══ */
 .label-page {
-  width: 210mm;
-  height: 297mm;
-  display: grid;
-  gap: 0;
-  background: white;
-  page-break-after: always;
-  break-after: page;
+  width: 210mm; height: 297mm;
+  display: grid; gap: 0; background: white;
+  page-break-after: always; break-after: page;
 }
+.layout-40 { grid-template-columns: repeat(4, 1fr); padding: 6mm; }
+.layout-40 .label, .layout-40 .label-empty { min-height: 27mm; }
 
-/* --- 40格（舊版 52.5×29.7mm）--- */
-.layout-40 {
-  grid-template-columns: repeat(4, 1fr);
-  padding: 6mm;
-}
-.layout-40 .label { min-height: 27mm; }
-.layout-40 .label-empty { min-height: 27mm; }
-
-/* --- 40格-47（47×26.9mm，上下14mm 左右7mm）--- */
-/* A4=210×297  可用寬=210-7-7=196mm  可用高=297-14-14=269mm
-   4欄×47mm=188mm → 欄間距=(196-188)/3 ≈ 2.67mm
-   10列×26.9mm=269mm → 列間距=0 */
 .layout-40-47 {
   grid-template-columns: repeat(4, 47mm);
   grid-template-rows: repeat(10, 26.9mm);
-  padding-top: 14mm;
-  padding-bottom: 14mm;
-  padding-left: 7mm;
-  padding-right: 7mm;
-  column-gap: 2.67mm;
-  row-gap: 0;
-  justify-content: start;
-  align-content: start;
+  padding: 14mm 7mm; column-gap: 2.67mm; row-gap: 0;
+  justify-content: start; align-content: start;
 }
-.layout-40-47 .label { height: 26.9mm; }
-.layout-40-47 .label-empty { height: 26.9mm; }
+.layout-40-47 .label, .layout-40-47 .label-empty { height: 26.9mm; }
 
-/* --- 21格：3欄×7列 --- */
-.layout-21 {
-  grid-template-columns: repeat(3, 1fr);
-  padding: 6mm;
-}
-.layout-21 .label { min-height: 38mm; }
-.layout-21 .label-empty { min-height: 38mm; }
+.layout-21 { grid-template-columns: repeat(3, 1fr); padding: 6mm; }
+.layout-21 .label, .layout-21 .label-empty { min-height: 38mm; }
 
-/* --- 24格：3欄×8列 --- */
-.layout-24 {
-  grid-template-columns: repeat(3, 1fr);
-  padding: 6mm;
-}
-.layout-24 .label { min-height: 33mm; }
-.layout-24 .label-empty { min-height: 33mm; }
+.layout-24 { grid-template-columns: repeat(3, 1fr); padding: 6mm; }
+.layout-24 .label, .layout-24 .label-empty { min-height: 33mm; }
 
-/* --- 65格：5欄×13列 --- */
-.layout-65 {
-  grid-template-columns: repeat(5, 1fr);
-  padding: 6mm;
-}
-.layout-65 .label { min-height: 20mm; }
-.layout-65 .label-empty { min-height: 20mm; }
+.layout-65 { grid-template-columns: repeat(5, 1fr); padding: 6mm; }
+.layout-65 .label, .layout-65 .label-empty { min-height: 20mm; }
 
+/* ══ 標籤共用 ══ */
 .label {
-  border: 0.3mm solid #bbb;
-  border-radius: 1mm;
-  padding: 2mm 2.5mm;
-  display: flex;
-  flex-direction: column;
-  gap: 1mm;
-  background: white;
-  overflow: hidden;
+  border: 0.3mm solid #bbb; border-radius: 1mm;
+  padding: 2mm 2.5mm; display: flex; flex-direction: column;
+  gap: 1mm; background: white; overflow: hidden;
 }
-
 .lbl-brand { font-size: 5.5pt; font-weight: 900; color: #111; letter-spacing: 1.5px; text-transform: uppercase; }
 .lbl-code  { font-family: 'DM Mono', monospace; font-size: 13pt; font-weight: 900; color: #111; line-height: 1.1; }
 .lbl-name  { font-size: 9pt; font-weight: 400; color: #555; line-height: 1.3; }
 .lbl-tags  { display: flex; gap: 1.5mm; flex-wrap: wrap; margin-top: 0.5mm; }
 .lbl-tag   { font-size: 10pt; font-weight: 900; padding: 0.5mm 2mm; border-radius: 1mm; border: 0.3mm solid #333; background: white; color: #111; }
 
-/* 小格字體縮小 */
 .layout-65 .lbl-code { font-size: 9pt; }
 .layout-65 .lbl-name { font-size: 5.5pt; }
 .layout-65 .lbl-tag  { font-size: 7pt; }
-
-/* 47×26.9 格字體微調 */
 .layout-40-47 .lbl-code { font-size: 12pt; }
 .layout-40-47 .lbl-name { font-size: 7pt; }
 .layout-40-47 .lbl-tag  { font-size: 9pt; }
+
+/* TTP-345 預覽標籤 */
+.ttp-label {
+  width: 50mm; height: 30mm;
+  padding: 3mm 3mm 1mm 3mm;
+  display: flex; flex-direction: column; justify-content: flex-start;
+  overflow: hidden; background: white; border: 0.3mm solid #bbb; border-radius: 1mm;
+}
+.ttp-label .t-code { font-family: 'DM Mono', monospace; font-size: 28pt; font-weight: 900; color: #000; line-height: 1.1; }
+.ttp-label .t-tags { display: flex; gap: 2mm; margin-top: 1mm; }
+.ttp-label .t-tag  { border: 2px solid #333; border-radius: 3px; padding: 0.5mm 2mm; font-size: 18pt; font-weight: 800; color: #000; }
 
 .label-empty { border: 0.3mm dashed #e0e0e0; border-radius: 1mm; background: white; }
 #printArea { display: none; }
@@ -178,7 +183,7 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
 <div class="wrap">
   <header>
     <h1>CHUWA 到貨標籤列印系統</h1>
-    <p>上傳訂單 Excel → 選擇訂貨群組 → 列印標籤</p>
+    <p>上傳訂單 Excel → 選擇群組 → 搜尋或勾選 → 列印標籤</p>
   </header>
 
   <!-- Step 1 -->
@@ -199,41 +204,60 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
   </div>
 
   <!-- Step 3 -->
-  <div class="card" id="settingsCard" style="display:none">
-    <div class="card-title">③ 列印設定</div>
-    <div class="settings-grid">
-      <div class="layout-row">
-        <label>標籤規格：</label>
-        <select id="layoutSel">
-          <option value="40-47" selected>A4 × 40格（47×26.9mm）✅</option>
-          <option value="40">A4 × 40格（52.5×29.7mm）</option>
-          <option value="21">A4 × 21格</option>
-          <option value="24">A4 × 24格</option>
-          <option value="65">A4 × 65格（小型）</option>
-        </select>
-      </div>
-      <div class="layout-row">
-        <label>字體大小：</label>
-        <input type="range" id="fontScale" min="60" max="150" value="100" step="5"
-          style="width:160px;accent-color:#c0392b;"
-          oninput="updateFontScale(this.value)">
-        <span id="fontScaleVal" style="font-size:13px;font-weight:700;color:#c0392b;min-width:40px;">100%</span>
-        <button onclick="document.getElementById('fontScale').value=100;updateFontScale(100);"
-          style="padding:5px 12px;border:1px solid #ddd;border-radius:6px;background:#fafafa;font-size:12px;cursor:pointer;font-family:inherit;">重置</button>
-      </div>
+  <div class="card" id="modeCard" style="display:none">
+    <div class="card-title">③ 列印模式</div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="switchMode('ttp345')">TTP-345 標籤機（50×30mm）</button>
+      <button class="mode-tab" onclick="switchMode('a4')">A4 標籤紙</button>
     </div>
-    <div class="btn-row">
-      <button class="btn btn-red" onclick="generateLabels()">🏷 產生標籤預覽</button>
-      <button class="btn btn-dark" id="printBtn" disabled onclick="window.print()">🖨 列印標籤</button>
+    <div id="a4Settings" style="display:none">
+      <div class="settings-grid">
+        <div class="layout-row">
+          <label>標籤規格：</label>
+          <select id="layoutSel">
+            <option value="40-47" selected>A4 × 40格（47×26.9mm）</option>
+            <option value="40">A4 × 40格（52.5×29.7mm）</option>
+            <option value="21">A4 × 21格</option>
+            <option value="24">A4 × 24格</option>
+            <option value="65">A4 × 65格（小型）</option>
+          </select>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- 預覽表格 -->
-  <div class="card" id="previewCard" style="display:none">
-    <div class="card-title">資料預覽</div>
+  <!-- Step 4 -->
+  <div class="card" id="selectCard" style="display:none">
+    <div class="card-title">④ 搜尋 / 勾選要列印的標籤</div>
+
+    <div class="search-bar">
+      <input type="text" class="search-input" id="searchInput" placeholder="輸入編號搜尋，按 Enter 加入列印…" autocomplete="off">
+      <button class="btn btn-red btn-sm" onclick="doSearch()">搜尋</button>
+      <button class="btn btn-outline btn-sm" id="clearSearchBtn" style="display:none" onclick="clearSearch()">清除</button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+
     <div class="summary-box" id="summaryBox"></div>
     <div class="tbl-wrap">
       <table id="previewTbl"></table>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-outline btn-sm" onclick="selectAll()">全選</button>
+      <button class="btn btn-outline btn-sm" onclick="deselectAll()">取消全選</button>
+    </div>
+
+    <div class="queue-section" id="queueSection" style="display:none">
+      <div class="queue-header">
+        <h4>列印佇列</h4>
+        <button class="btn btn-outline btn-sm" onclick="clearQueue()">清空</button>
+      </div>
+      <div class="queue-list" id="queueList"></div>
+      <div class="queue-total" id="queueTotal"></div>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-red" onclick="generateLabels()">產生標籤預覽</button>
+      <button class="btn btn-dark" id="printBtn" disabled onclick="doPrint()">列印標籤</button>
     </div>
   </div>
 
@@ -245,18 +269,17 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
   </div>
 </div>
 
-<!-- 列印專用 -->
 <div id="printArea"></div>
 
 <script>
-let allRows     = [];
-let orderCols   = [];
-let selectedCols = [];
+let allRows = [], orderCols = [], selectedCols = [];
+let selectedRows = new Set();
+let printMode = 'ttp345';
 
 /* ══ 上傳 ══ */
 const dropZone = document.getElementById('dropZone');
 dropZone.addEventListener('click', () => document.getElementById('fileInput').click());
-dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
 dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag'); processFile(e.dataTransfer.files[0]); });
 document.getElementById('fileInput').addEventListener('change', e => processFile(e.target.files[0]));
@@ -268,103 +291,78 @@ function processFile(file) {
     try {
       const wb = XLSX.read(e.target.result, { type: 'array', cellFormula: false });
       parseSheet(wb.Sheets[wb.SheetNames[0]], file.name);
-    } catch(err) {
-      alert('檔案讀取失敗，請確認是否為正確的 Excel 格式');
-    }
+    } catch(err) { alert('檔案讀取失敗，請確認是否為正確的 Excel 格式'); }
   };
   reader.readAsArrayBuffer(file);
 }
 
-/* ══ 解析工作表 ══ */
 function parseSheet(ws, filename) {
   const range = XLSX.utils.decode_range(ws['!ref']);
-
   orderCols = [];
   for (let c = range.s.c; c <= range.e.c; c++) {
     const r1val = String(ws[XLSX.utils.encode_cell({ r: 0, c })]?.v || '').trim();
     const r2val = String(ws[XLSX.utils.encode_cell({ r: 1, c })]?.v || '').trim();
-    const hasGroup   = r1val !== '' && r1val !== 'undefined';
+    const hasGroup = r1val !== '' && r1val !== 'undefined';
     const isOrderHdr = r2val === 'ORDER' || /^\d+\/\d+\s*ORDER$/i.test(r2val);
-    if (hasGroup && isOrderHdr) {
-      orderCols.push({ label: `${r1val}　${r2val}`, colIndex: c });
-    }
+    if (hasGroup && isOrderHdr) orderCols.push({ label: `${r1val}　${r2val}`, colIndex: c });
   }
-
-  if (orderCols.length === 0) {
-    alert('找不到 ORDER 欄位，請確認 Excel 格式正確');
-    return;
-  }
+  if (orderCols.length === 0) { alert('找不到 ORDER 欄位，請確認 Excel 格式正確'); return; }
 
   allRows = [];
-  let lastCode = '';
-  let lastName = '';
-
+  let lastCode = '', lastName = '';
   for (let r = 2; r <= range.e.r; r++) {
     const get = c => ws[XLSX.utils.encode_cell({ r, c })]?.v ?? '';
     const rawCode = String(get(0)).trim();
     const rawName = String(get(1)).trim();
-    const color   = String(get(5)).trim();
-    const size    = String(get(6)).trim();
-
+    const color = String(get(5)).trim();
+    const size = String(get(6)).trim();
     if (!rawCode && !color && !size) continue;
     if (rawCode.toUpperCase().includes('TOTAL')) continue;
     const codeToUse = rawCode || lastCode;
     if (!codeToUse || !/^[A-Za-z]+\d+/.test(codeToUse)) continue;
-
     if (/^[A-Za-z]+\d+/.test(rawCode)) lastCode = rawCode;
     if (rawName) {
       const match = rawName.match(/[（(]([^）)]+)[）)]/);
       lastName = match ? match[1] : rawName;
     }
-
     const qty = {};
     orderCols.forEach(oc => {
       const v = ws[XLSX.utils.encode_cell({ r, c: oc.colIndex })]?.v;
       qty[oc.colIndex] = (typeof v === 'number' && v > 0) ? Math.round(v) : 0;
     });
-
     allRows.push({ code: codeToUse, name: lastName, color, size, qty });
   }
-
-  if (allRows.length === 0) {
-    alert('沒有找到有效的商品資料');
-    return;
-  }
+  if (allRows.length === 0) { alert('沒有找到有效的商品資料'); return; }
 
   renderDateButtons();
-
-  dropZone.innerHTML = `
-    <div class="upload-icon">✅</div>
-    <b>${filename}</b>
-    <p>點擊重新選擇</p>
-    <input type="file" id="fileInput" accept=".xlsx,.xls">
-  `;
+  dropZone.innerHTML = `<div class="upload-icon">✅</div><b>${filename}</b><p>點擊重新選擇</p><input type="file" id="fileInput" accept=".xlsx,.xls">`;
   document.getElementById('fileInput').addEventListener('change', e => processFile(e.target.files[0]));
-  document.getElementById('dateCard').style.display     = 'block';
-  document.getElementById('settingsCard').style.display = 'block';
+  document.getElementById('dateCard').style.display = 'block';
+  document.getElementById('modeCard').style.display = 'block';
+}
+
+/* ══ 模式切換 ══ */
+function switchMode(mode) {
+  printMode = mode;
+  document.querySelectorAll('.mode-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && mode === 'ttp345') || (i === 1 && mode === 'a4'));
+  });
+  document.getElementById('a4Settings').style.display = mode === 'a4' ? 'block' : 'none';
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('printBtn').disabled = true;
 }
 
 /* ══ 日期按鈕 ══ */
 function renderDateButtons() {
-  selectedCols = [];
+  selectedCols = []; selectedRows = new Set();
   const grid = document.getElementById('dateGrid');
   grid.innerHTML = '';
-
-  const activeCols = orderCols.filter(oc =>
-    allRows.some(row => (row.qty[oc.colIndex] || 0) > 0)
-  );
-
-  if (activeCols.length === 0) {
-    grid.innerHTML = '<p style="color:#888;font-size:13px">目前所有群組數量均為 0</p>';
-    return;
-  }
-
+  const activeCols = orderCols.filter(oc => allRows.some(row => (row.qty[oc.colIndex] || 0) > 0));
+  if (activeCols.length === 0) { grid.innerHTML = '<p style="color:#888;font-size:13px">目前所有群組數量均為 0</p>'; return; }
   activeCols.forEach(oc => {
     const btn = document.createElement('button');
-    btn.className   = 'date-btn';
-    btn.textContent = oc.label;
-    btn.dataset.col = oc.colIndex;
-    btn.onclick     = () => toggleCol(btn, oc.colIndex);
+    btn.className = 'date-btn'; btn.textContent = oc.label; btn.dataset.col = oc.colIndex;
+    btn.onclick = () => toggleCol(btn, oc.colIndex);
     grid.appendChild(btn);
   });
 }
@@ -373,140 +371,254 @@ function toggleCol(btn, colIdx) {
   if (btn.classList.contains('active')) {
     btn.classList.remove('active');
     selectedCols = selectedCols.filter(c => c !== colIdx);
-  } else {
-    btn.classList.add('active');
-    selectedCols.push(colIdx);
-  }
+  } else { btn.classList.add('active'); selectedCols.push(colIdx); }
+  selectedRows = new Set();
   refreshPreviewTable();
 }
 
-/* ══ 資料預覽表格 ══ */
-function refreshPreviewTable() {
-  if (!selectedCols.length) {
-    document.getElementById('previewCard').style.display = 'none';
-    return;
-  }
-  const summaryRows = [];
-  allRows.forEach(row => {
+/* ══ 有效行 ══ */
+function getSummaryRows() {
+  if (!selectedCols.length) return [];
+  const rows = [];
+  allRows.forEach((row, idx) => {
     const total = selectedCols.reduce((s, c) => s + (row.qty[c] || 0), 0);
-    if (total > 0) summaryRows.push({ ...row, total });
+    if (total > 0) rows.push({ ...row, total, _idx: idx });
   });
-
-  const totalLabels = summaryRows.reduce((s, r) => s + r.total, 0);
-  document.getElementById('summaryBox').textContent =
-    `共 ${summaryRows.length} 個 SKU，需印 ${totalLabels} 張標籤`;
-
-  const showRows = summaryRows.slice(0, 20);
-  const moreRows = summaryRows.length > 20 ? summaryRows.length - 20 : 0;
-  document.getElementById('previewTbl').innerHTML =
-    `<tr><th>編號</th><th>品名</th><th>顏色</th><th>尺寸</th><th>印標數量</th></tr>` +
-    showRows.map(r => `<tr>
-      <td>${r.code}</td><td>${r.name}</td>
-      <td>${r.color}</td><td>${r.size}</td>
-      <td><b>${r.total}</b></td>
-    </tr>`).join('') +
-    (moreRows > 0 ? `<tr><td colspan="5" style="text-align:center;color:#888;padding:10px">…還有 ${moreRows} 筆</td></tr>` : '');
-
-  document.getElementById('previewCard').style.display = 'block';
+  return rows;
 }
 
-/* ══ 版面配置對照 ══ */
+/* ══ 預覽表格 ══ */
+function refreshPreviewTable() {
+  const selectCard = document.getElementById('selectCard');
+  if (!selectedCols.length) { selectCard.style.display = 'none'; return; }
+  const summaryRows = getSummaryRows();
+  const totalLabels = summaryRows.reduce((s, r) => s + r.total, 0);
+  const selLabels = summaryRows.filter(r => selectedRows.has(r._idx)).reduce((s, r) => s + r.total, 0);
+  const selInfo = selectedRows.size > 0 ? `　｜　已選 ${selectedRows.size} 項 (${selLabels} 張)` : '';
+  document.getElementById('summaryBox').textContent = `共 ${summaryRows.length} 個 SKU，合計 ${totalLabels} 張標籤${selInfo}`;
+
+  document.getElementById('previewTbl').innerHTML =
+    `<tr><th class="cb-cell"><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this.checked)" ${selectedRows.size === summaryRows.length && summaryRows.length > 0 ? 'checked' : ''}></th><th>編號</th><th>品名</th><th>顏色</th><th>尺寸</th><th>數量</th></tr>` +
+    summaryRows.map(r => {
+      const chk = selectedRows.has(r._idx);
+      return `<tr class="${chk ? 'row-selected' : ''}" data-idx="${r._idx}">
+        <td class="cb-cell"><input type="checkbox" ${chk ? 'checked' : ''} onchange="toggleRow(${r._idx}, this.checked)"></td>
+        <td style="font-family:'DM Mono',monospace;font-weight:700">${r.code}</td>
+        <td>${r.name}</td><td>${r.color}</td><td>${r.size}</td>
+        <td><b>${r.total}</b></td></tr>`;
+    }).join('');
+
+  selectCard.style.display = 'block';
+  updateQueueDisplay();
+}
+
+/* ══ 勾選 ══ */
+function toggleRow(idx, checked) {
+  if (checked) selectedRows.add(idx); else selectedRows.delete(idx);
+  refreshPreviewTable();
+}
+function toggleCheckAll(checked) {
+  const sr = getSummaryRows();
+  if (checked) sr.forEach(r => selectedRows.add(r._idx)); else selectedRows.clear();
+  refreshPreviewTable();
+}
+function selectAll() { toggleCheckAll(true); }
+function deselectAll() { selectedRows.clear(); refreshPreviewTable(); }
+function clearQueue() { selectedRows.clear(); refreshPreviewTable(); }
+
+/* ══ 搜尋 ══ */
+const searchInput = document.getElementById('searchInput');
+searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
+searchInput.addEventListener('input', () => {
+  if (!searchInput.value.trim()) clearSearch();
+});
+
+function doSearch() {
+  const q = searchInput.value.trim().toUpperCase();
+  if (!q) { clearSearch(); return; }
+  const summaryRows = getSummaryRows();
+  const matches = summaryRows.filter(r =>
+    r.code.toUpperCase().includes(q) || r.color.toUpperCase().includes(q) || r.name.toUpperCase().includes(q)
+  );
+  const container = document.getElementById('searchResults');
+  document.getElementById('clearSearchBtn').style.display = 'inline-block';
+
+  if (matches.length === 0) {
+    container.innerHTML = '<div style="padding:10px;color:#888;font-size:13px">找不到符合「' + searchInput.value.trim() + '」的項目</div>';
+    return;
+  }
+  container.innerHTML = matches.map(r => {
+    const added = selectedRows.has(r._idx);
+    return `<div class="search-result-item ${added ? 'sr-added' : ''}" onclick="addFromSearch(${r._idx})">
+      <span class="sr-code">${hl(r.code, q)}</span>
+      <span class="sr-info">${r.color}${r.size ? ' / ' + r.size : ''}</span>
+      <span class="sr-qty">×${r.total}</span>
+      <span class="sr-status">${added ? '✔' : '＋'}</span>
+    </div>`;
+  }).join('');
+
+  // 高亮表格
+  document.querySelectorAll('#previewTbl tr[data-idx]').forEach(tr => {
+    const idx = parseInt(tr.dataset.idx);
+    tr.classList.toggle('row-highlight', matches.some(m => m._idx === idx) && !selectedRows.has(idx));
+  });
+}
+
+function hl(text, q) {
+  const i = text.toUpperCase().indexOf(q);
+  if (i === -1) return text;
+  return text.substring(0, i) + '<span style="background:#ffe082;border-radius:2px;padding:0 2px">' + text.substring(i, i + q.length) + '</span>' + text.substring(i + q.length);
+}
+
+function addFromSearch(idx) {
+  if (selectedRows.has(idx)) selectedRows.delete(idx); else selectedRows.add(idx);
+  refreshPreviewTable();
+  doSearch();
+}
+
+function clearSearch() {
+  searchInput.value = '';
+  document.getElementById('searchResults').innerHTML = '';
+  document.getElementById('clearSearchBtn').style.display = 'none';
+  document.querySelectorAll('#previewTbl tr.row-highlight').forEach(tr => tr.classList.remove('row-highlight'));
+}
+
+/* ══ 列印佇列 ══ */
+function updateQueueDisplay() {
+  const qs = document.getElementById('queueSection');
+  if (selectedRows.size === 0) { qs.style.display = 'none'; return; }
+  const summaryRows = getSummaryRows();
+  const items = summaryRows.filter(r => selectedRows.has(r._idx));
+  const total = items.reduce((s, r) => s + r.total, 0);
+
+  document.getElementById('queueList').innerHTML = items.map(r => `
+    <div class="queue-item">
+      <span class="qi-code">${r.code}</span>
+      <span class="qi-tags">
+        ${r.color ? `<span class="qi-tag">${r.color}</span>` : ''}
+        ${r.size && r.size !== 'F' ? `<span class="qi-tag">${r.size}</span>` : ''}
+      </span>
+      <span class="qi-count">×${r.total}</span>
+      <button class="qi-remove" onclick="toggleRow(${r._idx}, false)">✕</button>
+    </div>`).join('');
+
+  document.getElementById('queueTotal').textContent = `已選 ${items.length} 項，共 ${total} 張標籤`;
+  qs.style.display = 'block';
+}
+
+/* ══ 版面配置 ══ */
 const layoutConfig = {
-  '40':    { perPage: 40, cssClass: 'layout-40' },
+  '40': { perPage: 40, cssClass: 'layout-40' },
   '40-47': { perPage: 40, cssClass: 'layout-40-47' },
-  '21':    { perPage: 21, cssClass: 'layout-21' },
-  '24':    { perPage: 24, cssClass: 'layout-24' },
-  '65':    { perPage: 65, cssClass: 'layout-65' },
+  '21': { perPage: 21, cssClass: 'layout-21' },
+  '24': { perPage: 24, cssClass: 'layout-24' },
+  '65': { perPage: 65, cssClass: 'layout-65' },
 };
 
 /* ══ 產生標籤 ══ */
 function generateLabels() {
   if (!selectedCols.length) { alert('請先選擇訂貨群組！'); return; }
+  if (selectedRows.size === 0) { alert('請先勾選或搜尋要列印的項目！'); return; }
 
+  const summaryRows = getSummaryRows();
   const labelList = [];
-  allRows.forEach(row => {
-    const total = selectedCols.reduce((s, c) => s + (row.qty[c] || 0), 0);
-    for (let i = 0; i < total; i++) {
+  summaryRows.forEach(row => {
+    if (!selectedRows.has(row._idx)) return;
+    for (let i = 0; i < row.total; i++) {
       labelList.push({ code: row.code, name: row.name, color: row.color, size: row.size });
     }
   });
+  if (labelList.length === 0) { alert('沒有標籤可產生'); return; }
 
-  if (labelList.length === 0) { alert('選取的群組沒有任何數量'); return; }
-
-  const layoutKey = document.getElementById('layoutSel').value;
-  const config    = layoutConfig[layoutKey];
-  const perPage   = config.perPage;
-  const totalPages = Math.ceil(labelList.length / perPage);
-
-  function makeLabelEl(item) {
-    const div = document.createElement('div');
-    div.className = 'label';
-    div.innerHTML = `
-      <div class="lbl-brand">CHUWA</div>
-      <div class="lbl-code">${item.code}</div>
-      <div class="lbl-name">${item.name}</div>
-      <div class="lbl-tags">
-        ${item.color ? `<span class="lbl-tag">${item.color}</span>` : ''}
-        ${item.size  ? `<span class="lbl-tag">${item.size}</span>`  : ''}
-      </div>`;
-    return div;
-  }
-
-  function makePage(slice) {
-    const page = document.createElement('div');
-    page.className = `label-page ${config.cssClass}`;
-    slice.forEach(item => page.appendChild(makeLabelEl(item)));
-    const rem = perPage - slice.length;
-    for (let i = 0; i < rem; i++) {
-      const e = document.createElement('div');
-      e.className = 'label-empty';
-      page.appendChild(e);
-    }
-    return page;
-  }
-
-  const pages = [];
-  for (let p = 0; p < totalPages; p++) {
-    pages.push(makePage(labelList.slice(p * perPage, (p + 1) * perPage)));
-  }
-
-  // 螢幕預覽
-  const preview = document.getElementById('labelPreview');
-  preview.innerHTML = '';
-  pages.forEach(pg => preview.appendChild(pg.cloneNode(true)));
-  document.getElementById('previewNote').textContent =
-    `共 ${labelList.length} 張標籤 ／ ${totalPages} 頁 A4（每頁 ${perPage} 格）`;
-  document.getElementById('previewWrap').style.display = 'block';
-
-  // 列印專用
-  const printArea = document.getElementById('printArea');
-  printArea.innerHTML = '';
-  pages.forEach(pg => printArea.appendChild(pg));
-
-  const printBtn = document.getElementById('printBtn');
-  printBtn.disabled    = false;
-  printBtn.textContent = `🖨 列印 ${totalPages} 頁（共 ${labelList.length} 張）`;
-
-  // 套用字體縮放
-  const scale = parseInt(document.getElementById('fontScale').value) / 100;
-  applyFontScale(scale);
-
+  if (printMode === 'ttp345') generateTTP345(labelList);
+  else generateA4(labelList);
   document.getElementById('previewWrap').scrollIntoView({ behavior: 'smooth' });
 }
 
-/* ══ 字體大小 ══ */
-function updateFontScale(val) {
-  document.getElementById('fontScaleVal').textContent = val + '%';
-  applyFontScale(val / 100);
+/* ══ TTP-345 ══ */
+function generateTTP345(labelList) {
+  const preview = document.getElementById('labelPreview');
+  preview.innerHTML = ''; preview.className = 'label-printer-preview';
+  labelList.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'ttp-label';
+    div.innerHTML = `<div class="t-code">${item.code}</div><div class="t-tags">${item.color ? `<span class="t-tag">${item.color}</span>` : ''}${item.size && item.size !== 'F' ? `<span class="t-tag">${item.size}</span>` : ''}</div>`;
+    preview.appendChild(div);
+  });
+  document.getElementById('previewNote').textContent = `共 ${labelList.length} 張標籤（TTP-345：50×30mm）`;
+  document.getElementById('previewWrap').style.display = 'block';
+  const pb = document.getElementById('printBtn');
+  pb.disabled = false; pb.textContent = `列印 ${labelList.length} 張標籤`;
 }
 
-function applyFontScale(scale) {
-  const sizes = { 'lbl-code': 13, 'lbl-name': 7.5, 'lbl-tag': 10, 'lbl-brand': 5.5 };
-  Object.entries(sizes).forEach(([cls, base]) => {
-    document.querySelectorAll('.' + cls).forEach(el => {
-      el.style.fontSize = (base * scale) + 'pt';
-    });
+/* ══ A4 ══ */
+function generateA4(labelList) {
+  const lk = document.getElementById('layoutSel').value;
+  const cfg = layoutConfig[lk], pp = cfg.perPage;
+  const tp = Math.ceil(labelList.length / pp);
+
+  function mkLabel(item) {
+    const d = document.createElement('div'); d.className = 'label';
+    d.innerHTML = `<div class="lbl-brand">CHUWA</div><div class="lbl-code">${item.code}</div><div class="lbl-name">${item.name}</div><div class="lbl-tags">${item.color ? `<span class="lbl-tag">${item.color}</span>` : ''}${item.size ? `<span class="lbl-tag">${item.size}</span>` : ''}</div>`;
+    return d;
+  }
+  function mkPage(slice) {
+    const p = document.createElement('div'); p.className = `label-page ${cfg.cssClass}`;
+    slice.forEach(i => p.appendChild(mkLabel(i)));
+    for (let i = 0; i < pp - slice.length; i++) { const e = document.createElement('div'); e.className = 'label-empty'; p.appendChild(e); }
+    return p;
+  }
+
+  const pages = [];
+  for (let p = 0; p < tp; p++) pages.push(mkPage(labelList.slice(p * pp, (p + 1) * pp)));
+
+  const preview = document.getElementById('labelPreview');
+  preview.innerHTML = ''; preview.className = '';
+  pages.forEach(pg => preview.appendChild(pg.cloneNode(true)));
+  document.getElementById('previewNote').textContent = `共 ${labelList.length} 張標籤 ／ ${tp} 頁 A4（每頁 ${pp} 格）`;
+  document.getElementById('previewWrap').style.display = 'block';
+
+  const pa = document.getElementById('printArea'); pa.innerHTML = '';
+  pages.forEach(pg => pa.appendChild(pg));
+  const pb = document.getElementById('printBtn');
+  pb.disabled = false; pb.textContent = `列印 ${tp} 頁（共 ${labelList.length} 張）`;
+}
+
+/* ══ 列印 ══ */
+function doPrint() {
+  if (printMode === 'ttp345') printTTP345(); else window.print();
+}
+
+function printTTP345() {
+  if (!selectedCols.length || selectedRows.size === 0) return;
+  const summaryRows = getSummaryRows();
+  const labels = [];
+  summaryRows.forEach(row => {
+    if (!selectedRows.has(row._idx)) return;
+    for (let i = 0; i < row.total; i++) labels.push({ code: row.code, color: row.color, size: row.size });
   });
+  if (labels.length === 0) return;
+
+  var win = window.open('', '_blank', 'width=300,height=500');
+  if (!win) { alert('請允許彈出視窗'); return; }
+  var html = '<!DOCTYPE html><html><head><title>標籤</title><style>' +
+    '@page{size:50mm 30mm;margin:0mm;}' +
+    '@media print{html,body{width:50mm;height:30mm;margin:0;padding:0;}}' +
+    '*{margin:0;padding:0;box-sizing:border-box;}' +
+    'body{font-family:"Microsoft JhengHei","PingFang TC","Arial",sans-serif;}' +
+    '.label{width:50mm;height:30mm;padding:3mm 3mm 1mm 3mm;page-break-after:always;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;}' +
+    '.code{font-size:28pt;font-weight:900;color:#000;line-height:1.1;}' +
+    '.tags{display:flex;gap:2mm;margin-top:1mm;}' +
+    '.tag{border:2px solid #333;border-radius:3px;padding:0.5mm 2mm;font-size:18pt;font-weight:800;color:#000;}' +
+    '</style></head><body>';
+  labels.forEach(function(l) {
+    html += '<div class="label"><div class="code">' + (l.code || '') + '</div><div class="tags">';
+    if (l.color) html += '<div class="tag">' + l.color + '</div>';
+    if (l.size && l.size !== 'F') html += '<div class="tag">' + l.size + '</div>';
+    html += '</div></div>';
+  });
+  html += '<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};setTimeout(function(){window.close();},3000);};<\/script></body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
 }
 </script>
 </body>
