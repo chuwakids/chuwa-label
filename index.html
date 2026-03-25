@@ -231,7 +231,7 @@ body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: va
     <div class="card-title">④ 搜尋 / 勾選要列印的標籤</div>
 
     <div class="search-bar">
-      <input type="text" class="search-input" id="searchInput" placeholder="輸入編號搜尋，按 Enter 加入列印…" autocomplete="off">
+      <input type="text" class="search-input" id="searchInput" placeholder="輸入編號，按 Enter 直接列印…" autocomplete="off">
       <button class="btn btn-red btn-sm" onclick="doSearch()">搜尋</button>
       <button class="btn btn-outline btn-sm" id="clearSearchBtn" style="display:none" onclick="clearSearch()">清除</button>
     </div>
@@ -428,14 +428,44 @@ function clearQueue() { selectedRows.clear(); refreshPreviewTable(); }
 
 /* ══ 搜尋 ══ */
 const searchInput = document.getElementById('searchInput');
-searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
-searchInput.addEventListener('input', () => {
-  if (!searchInput.value.trim()) clearSearch();
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); quickPrintByCode(); }
 });
-
-function doSearch() {
+searchInput.addEventListener('input', () => {
   const q = searchInput.value.trim().toUpperCase();
   if (!q) { clearSearch(); return; }
+  // 即時顯示搜尋結果（不列印）
+  showSearchResults(q);
+});
+
+/* 按 Enter → 直接列印符合的標籤 */
+function quickPrintByCode() {
+  const q = searchInput.value.trim().toUpperCase();
+  if (!q) return;
+  const summaryRows = getSummaryRows();
+  const matches = summaryRows.filter(r => r.code.toUpperCase().includes(q));
+  if (matches.length === 0) {
+    showSearchMsg('找不到符合「' + searchInput.value.trim() + '」的編號');
+    return;
+  }
+  // 組標籤
+  const labels = [];
+  matches.forEach(r => {
+    for (let i = 0; i < r.total; i++) labels.push({ code: r.code, color: r.color, size: r.size });
+  });
+  // 顯示送印提示
+  const totalSKU = matches.length;
+  const totalQty = labels.length;
+  showSearchMsg(`✓ 送印 ${totalSKU} 個 SKU，共 ${totalQty} 張標籤`, true);
+  // 直接開列印視窗
+  directPrintTTP345(labels);
+  // 清空搜尋框，準備下一筆
+  searchInput.value = '';
+  searchInput.focus();
+}
+
+/* 即時搜尋結果預覽（輸入時） */
+function showSearchResults(q) {
   const summaryRows = getSummaryRows();
   const matches = summaryRows.filter(r =>
     r.code.toUpperCase().includes(q) || r.color.toUpperCase().includes(q) || r.name.toUpperCase().includes(q)
@@ -444,36 +474,75 @@ function doSearch() {
   document.getElementById('clearSearchBtn').style.display = 'inline-block';
 
   if (matches.length === 0) {
-    container.innerHTML = '<div style="padding:10px;color:#888;font-size:13px">找不到符合「' + searchInput.value.trim() + '」的項目</div>';
+    container.innerHTML = '<div style="padding:10px;color:#888;font-size:13px">找不到符合「' + q + '」的項目</div>';
     return;
   }
-  container.innerHTML = matches.map(r => {
-    const added = selectedRows.has(r._idx);
-    return `<div class="search-result-item ${added ? 'sr-added' : ''}" onclick="addFromSearch(${r._idx})">
+  container.innerHTML = matches.slice(0, 10).map(r => {
+    return `<div class="search-result-item" onclick="quickPrintOne(${r._idx})">
       <span class="sr-code">${hl(r.code, q)}</span>
       <span class="sr-info">${r.color}${r.size ? ' / ' + r.size : ''}</span>
       <span class="sr-qty">×${r.total}</span>
-      <span class="sr-status">${added ? '✔' : '＋'}</span>
+      <span class="sr-status" style="font-size:12px;color:var(--red)">Enter 列印</span>
     </div>`;
-  }).join('');
+  }).join('') + (matches.length > 10 ? '<div style="padding:6px 10px;color:#888;font-size:12px">…還有 ' + (matches.length - 10) + ' 筆</div>' : '');
 
   // 高亮表格
   document.querySelectorAll('#previewTbl tr[data-idx]').forEach(tr => {
     const idx = parseInt(tr.dataset.idx);
-    tr.classList.toggle('row-highlight', matches.some(m => m._idx === idx) && !selectedRows.has(idx));
+    tr.classList.toggle('row-highlight', matches.some(m => m._idx === idx));
   });
 }
+
+/* 點擊搜尋結果 → 直接印該 SKU */
+function quickPrintOne(idx) {
+  const summaryRows = getSummaryRows();
+  const row = summaryRows.find(r => r._idx === idx);
+  if (!row) return;
+  const labels = [];
+  for (let i = 0; i < row.total; i++) labels.push({ code: row.code, color: row.color, size: row.size });
+  showSearchMsg(`✓ 送印 ${row.code}，共 ${labels.length} 張`, true);
+  directPrintTTP345(labels);
+  searchInput.value = '';
+  searchInput.focus();
+}
+
+function showSearchMsg(msg, isOk) {
+  const container = document.getElementById('searchResults');
+  container.innerHTML = `<div style="padding:10px;font-size:13px;font-weight:700;color:${isOk ? '#1a5c30' : '#888'}">${msg}</div>`;
+  if (isOk) setTimeout(() => { container.innerHTML = ''; }, 2500);
+}
+
+/* 直接列印（TTP-345） */
+function directPrintTTP345(labels) {
+  if (labels.length === 0) return;
+  var win = window.open('', '_blank', 'width=300,height=500');
+  if (!win) { alert('請允許彈出視窗'); return; }
+  var html = '<!DOCTYPE html><html><head><title>標籤</title><style>' +
+    '@page{size:50mm 30mm;margin:0mm;}' +
+    '@media print{html,body{width:50mm;height:30mm;margin:0;padding:0;}}' +
+    '*{margin:0;padding:0;box-sizing:border-box;}' +
+    'body{font-family:"Microsoft JhengHei","PingFang TC","Arial",sans-serif;}' +
+    '.label{width:50mm;height:30mm;padding:3mm 3mm 1mm 3mm;page-break-after:always;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;}' +
+    '.code{font-size:28pt;font-weight:900;color:#000;line-height:1.1;}' +
+    '.tags{display:flex;gap:2mm;margin-top:1mm;}' +
+    '.tag{border:2px solid #333;border-radius:3px;padding:0.5mm 2mm;font-size:18pt;font-weight:800;color:#000;}' +
+    '</style></head><body>';
+  labels.forEach(function(l) {
+    html += '<div class="label"><div class="code">' + (l.code || '') + '</div><div class="tags">';
+    if (l.color) html += '<div class="tag">' + l.color + '</div>';
+    if (l.size && l.size !== 'F') html += '<div class="tag">' + l.size + '</div>';
+    html += '</div></div>';
+  });
+  html += '<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};setTimeout(function(){window.close();},3000);};<\/script></body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
+}
+
+function doSearch() { showSearchResults(searchInput.value.trim().toUpperCase()); }
 
 function hl(text, q) {
   const i = text.toUpperCase().indexOf(q);
   if (i === -1) return text;
   return text.substring(0, i) + '<span style="background:#ffe082;border-radius:2px;padding:0 2px">' + text.substring(i, i + q.length) + '</span>' + text.substring(i + q.length);
-}
-
-function addFromSearch(idx) {
-  if (selectedRows.has(idx)) selectedRows.delete(idx); else selectedRows.add(idx);
-  refreshPreviewTable();
-  doSearch();
 }
 
 function clearSearch() {
